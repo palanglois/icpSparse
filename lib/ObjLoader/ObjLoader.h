@@ -16,6 +16,7 @@ class ObjectLoader
 public:
   ObjectLoader();
   Eigen::Matrix<double,Eigen::Dynamic,3> operator()(std::string filePath);
+  void dumpToFile(Eigen::Matrix<double,Eigen::Dynamic,3> vertice, Eigen::Matrix<double,Eigen::Dynamic,3> normals, std::string filePath);
 private:
 };
 

@@ -4,12 +4,18 @@ using namespace std;
 using namespace Eigen;
 using namespace nanoflann;
 
-IcpOptimizer::IcpOptimizer()
+IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals) : 
+firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals)
 {
   //Set parameters
+  cout << "Estimating normals for first cloud" << endl;
+  firstNormals = estimateNormals(_firstCloud,kNormals);
+  cout << "Estimating normals for second cloud" << endl;
+  secondNormals = estimateNormals(_secondCloud,kNormals);
+  cout << "Done with normal estimation" << endl;
 }
 
-/* This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation
+/* This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the indices of the closest opint in refCloud for each point in queryCloud.
 */
 vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud, bool verbose)
 {
@@ -34,7 +40,7 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
     KNNResultSet<double> resultSet(num_results);
     resultSet.init(&ret_indexes[0], &out_dists_sqr[0] );
 
-    mat_index.index->findNeighbors(resultSet, &queryPoint[0], nanoflann::SearchParams(10));
+    mat_index.index->findNeighbors(resultSet, &queryPoint[0], SearchParams(10));
     foundIndex.push_back(ret_indexes[0]);
 
     if(verbose)
@@ -44,4 +50,89 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
     }
   }
   return foundIndex;
+}
+
+/* This function estimates the normals for the point cloud pointCloud. It makes use of the k nearest neighbour algorithm implemented in FLANN
+*/
+Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> pointCloud, const size_t k)
+{
+  //Create an adapted kd tree for the point cloud
+  typedef KDTreeEigenMatrixAdaptor< Matrix<double,Dynamic,3> > my_kd_tree_t;
+
+  //Create an index
+  my_kd_tree_t   mat_index(3, pointCloud, 10 /* max leaf */ );
+  mat_index.index->buildIndex();
+
+  Matrix<double,Dynamic,3> normals;
+  normals.resize(pointCloud.rows(),3);
+  for(int i=0;i<pointCloud.rows();i++)
+  {
+    //Current point for which the normal is being computed
+    Matrix<double,1,3> currentPoint = pointCloud.block(i,0,1,3);
+    //cout << "Current point : " << currentPoint << endl;
+    
+    //Do a knn search
+    vector<size_t> ret_indexes(k);
+    vector<double> out_dists_sqr(k);
+
+    KNNResultSet<double> resultSet(k);
+    resultSet.init(&ret_indexes[0], &out_dists_sqr[0]);
+
+    mat_index.index->findNeighbors(resultSet, &currentPoint[0], SearchParams(10));
+    
+    //Compute the covariance matrix
+
+    //Compute the barycentre of the nearest neighbours
+    Matrix<double,1,3> barycentre;
+    for(int j=0;j<3;j++)
+    {
+      double curVal = 0.;
+      for(int neighbour=0;neighbour<k;neighbour++)
+      {
+        curVal += pointCloud(ret_indexes[neighbour],j);
+      }
+      barycentre(0,j) = curVal / double(k);
+    }
+    
+    //Compute the centered nearest neighbour matrix
+    Matrix<double,Dynamic,3> centeredNN;
+    centeredNN.resize(k,3);
+    //cout << "[" ;
+    for(int j=0;j<k;j++)
+    {
+      centeredNN(j,0) = pointCloud(ret_indexes[j],0) - barycentre(0,0);
+      centeredNN(j,1) = pointCloud(ret_indexes[j],1) - barycentre(0,1);
+      centeredNN(j,2) = pointCloud(ret_indexes[j],2) - barycentre(0,2);
+    }
+
+    //Compute the covariance matrix
+    Matrix<double,3,3> covariance = centeredNN.transpose()*centeredNN;
+
+    //Computing its eigen values
+    EigenSolver<Matrix<double,Dynamic,Dynamic> > eigensolver(covariance);
+
+    //Find the indice of the greater eigen value
+    int bestIndice = -1;
+    double bestVal = DBL_MAX;
+    for(int j=0;j<3;j++)
+      if(eigensolver.eigenvalues()(j,0).real()<bestVal)
+      {
+        bestVal = eigensolver.eigenvalues()(j,0).real();
+        bestIndice = j;
+      }
+
+    //Filling the normal
+    Matrix<double,1,3> normal = eigensolver.eigenvectors().block(0,bestIndice,3,1).normalized().transpose().real();
+    normals(i,0) = normal(0,0);
+    normals(i,1) = normal(0,1);
+    normals(i,2) = normal(0,2);
+  }
+  return normals;
+}
+
+/* Just a getter to the normals of the first cloud (reference cloud)
+*/
+Matrix<double,Dynamic,3> IcpOptimizer::getFirstNormals() const
+{
+  return firstNormals;
 }

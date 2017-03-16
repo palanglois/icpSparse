@@ -4,15 +4,50 @@ using namespace std;
 using namespace Eigen;
 using namespace nanoflann;
 
-IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals) : 
-firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals)
+IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations) : 
+firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations)
 {
-  //Set parameters
+  //Normal estimation
   cout << "Estimating normals for first cloud" << endl;
   firstNormals = estimateNormals(_firstCloud,kNormals);
   cout << "Estimating normals for second cloud" << endl;
   secondNormals = estimateNormals(_secondCloud,kNormals);
   cout << "Done with normal estimation" << endl;
+}
+
+pair<RotMatrix,TransMatrix> IcpOptimizer::performSparceICP()
+{
+  //Initialize the rigid transformation
+
+  RotMatrix initialRotation;
+  initialRotation.setZero();
+  for(int i=0;i<3;i++)
+    initialRotation(i,i) = 1.;
+
+  TransMatrix initialTranslation;
+  initialTranslation.setZero();
+
+  //Initialize the point cloud that is going to move
+  PointCloud movingPC = secondCloud;
+
+  //Beginning of the algorithm itself
+  for(int iter = 0; iter<nbIterations ; iter++)
+  {
+    //1st step : Computing correspondances
+    vector<int> matchIndice = computeCorrespondances(firstCloud,movingPC);
+
+    //2nd step : Computing transformation
+
+    // step 2.1 (see paper notation)
+
+    // step 2.2 (see paper notation)
+
+    // step 2.3 (see paper notation)
+
+    //3rd step : Updating the moving pointCloud
+  }
+
+  return pair<RotMatrix,TransMatrix>(initialRotation,initialTranslation);
 }
 
 /* This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the indices of the closest opint in refCloud for each point in queryCloud.
@@ -111,7 +146,7 @@ Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> 
     //Computing its eigen values
     EigenSolver<Matrix<double,Dynamic,Dynamic> > eigensolver(covariance);
 
-    //Find the indice of the greater eigen value
+    //Find the indice of the lowest eigen value
     int bestIndice = -1;
     double bestVal = DBL_MAX;
     for(int j=0;j<3;j++)

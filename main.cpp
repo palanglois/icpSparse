@@ -10,6 +10,7 @@ int main()
 
   //Parameters
   size_t kNormals = 10; //Number of nearest neighbours in order to estimate the normals
+  const int nbIterations = 15; //Number of iterations for the algorithm
 
   //Loading the point clouds
   ObjectLoader myLoader;
@@ -17,7 +18,7 @@ int main()
   Matrix<double,Dynamic,3> pointCloudTwo = myLoader("/home/thefroggy/Documents/MVA/NuageDePointModelisation/projet/testPC/bunny_side3.obj");
 
   //Creatin an IcpOptimizer in order to perform the sparse icp
-  IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals);
+  IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals,nbIterations);
   myIcpOptimizer.computeCorrespondances(pointCloudOne,pointCloudTwo);
 
 

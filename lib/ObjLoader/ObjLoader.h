@@ -15,7 +15,7 @@ class ObjectLoader
 {
 public:
   ObjectLoader();
-  std::vector<Eigen::Vector3d> operator()(std::string filePath);
+  Eigen::Matrix<double,Eigen::Dynamic,3> operator()(std::string filePath);
 private:
 };
 

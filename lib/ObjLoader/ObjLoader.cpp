@@ -8,10 +8,11 @@ ObjectLoader::ObjectLoader()
   
 }
 
-vector<Eigen::Vector3d> ObjectLoader::operator()(string filePath)
+Matrix<double,Dynamic,3> ObjectLoader::operator()(string filePath)
 {
-  vector<Eigen::Vector3d> pointCloud;
+  Eigen::Matrix<double,Eigen::Dynamic,3> pointCloud;
   ifstream filein(filePath.c_str());
+  int iterator = 0;
   for (std::string line; std::getline(filein, line); ) 
   { 
     if(line[0] != 'v')
@@ -24,9 +25,15 @@ vector<Eigen::Vector3d> ObjectLoader::operator()(string filePath)
       cout << "Problem when parsing vertex in file : " << filePath << endl;
       continue;
     }
-    pointCloud.push_back(Vector3d(stod(itemsInString[1]),
+     pointCloud.resize(pointCloud.rows()+1,3);
+     pointCloud(iterator,0) = stod(itemsInString[1]);
+     pointCloud(iterator,1) = stod(itemsInString[2]);
+     pointCloud(iterator,2) = stod(itemsInString[3]);
+     iterator++;
+    /*pointCloud.push_back(Vector3d(stod(itemsInString[1]),
                                     stod(itemsInString[2]),
-                                    stod(itemsInString[3])));
+                                    stod(itemsInString[3])));*/
   } 
-  cout << "Point Cloud successfully loaded with " << pointCloud.size() << " vertice." << endl;
+  cout << "Point Cloud successfully loaded with " << pointCloud.rows() << " vertice." << endl;
+  return pointCloud;
 }

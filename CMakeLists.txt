@@ -21,4 +21,5 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/IcpOptimizer)
 
 add_executable(icpSparse main.cpp)
 target_link_libraries(icpSparse ObjectLoader)
+target_link_libraries(icpSparse IcpOptimizer)
 

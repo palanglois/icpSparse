@@ -2,4 +2,5 @@ build/*
 compile_commands.json
 update_compile_commands.py
 *.swp
-
+*.kdev4
+kdev4

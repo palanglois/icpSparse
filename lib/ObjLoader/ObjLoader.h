@@ -1,0 +1,22 @@
+#ifndef OBJECT_LOADER_H
+#define OBJECT_LOADER_H
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
+class ObjectLoader
+{
+public:
+  ObjectLoader();
+  std::vector<Eigen::Vector3d> operator()(std::string filePath);
+private:
+};
+
+#endif

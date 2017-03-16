@@ -4,8 +4,8 @@ using namespace std;
 using namespace Eigen;
 using namespace nanoflann;
 
-IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations) : 
-firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations)
+IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, double _mu, int _nbIterShrink, double _p) : 
+firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations), mu(_mu), nbIterShrink(_nbIterShrink), p(_p)
 {
   //Normal estimation
   cout << "Estimating normals for first cloud" << endl;
@@ -15,6 +15,9 @@ firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbItera
   cout << "Done with normal estimation" << endl;
 }
 
+/*
+This function is the main implementation of the algorithm where every step are made explicit.
+*/
 pair<RotMatrix,TransMatrix> IcpOptimizer::performSparceICP()
 {
   //Initialize the rigid transformation
@@ -28,13 +31,13 @@ pair<RotMatrix,TransMatrix> IcpOptimizer::performSparceICP()
   initialTranslation.setZero();
 
   //Initialize the point cloud that is going to move
-  PointCloud movingPC = secondCloud;
+  PointCloud movingPC = firstCloud;
 
   //Beginning of the algorithm itself
   for(int iter = 0; iter<nbIterations ; iter++)
   {
     //1st step : Computing correspondances
-    vector<int> matchIndice = computeCorrespondances(firstCloud,movingPC);
+    vector<int> matchIndice = computeCorrespondances(secondCloud,movingPC);
 
     //2nd step : Computing transformation
 
@@ -163,6 +166,19 @@ Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> 
     normals(i,2) = normal(0,2);
   }
   return normals;
+}
+
+TransMatrix IcpOptimizer::shrink(TransMatrix h)
+{
+  double alpha_a = pow((2./mu)*(1.-p),1./(2.-p));
+  double hTilde = alpha_a+(p/mu)*pow(alpha_a,p-1);
+  double hNorm = h.norm();
+  if(hNorm <= hTilde)
+    return 0*h;
+  double beta = ((alpha_a)/hNorm+1.)/2.;
+  for(int i=0;i<nbIterShrink;i++)
+    beta = 1 - (p/mu)*pow(hNorm,p-2.)*pow(beta,p-1);
+  return beta*h;
 }
 
 /* Just a getter to the normals of the first cloud (reference cloud)

@@ -10,7 +10,7 @@
 #include "nanoflann.hpp"
 
 /* Each point in a point cloud is loaded as a line vector, 
-but every computation is made with the mathematical convention !
+but every computation is made with the mathematical convention ! (column vectors)
 As a consequence, TransMatrix is a column vector */
 
 typedef Eigen::Matrix<double,3,3> RotMatrix;               //A type for the rotation matrix
@@ -21,7 +21,7 @@ class IcpOptimizer
 {
 public:
   //Constructor
-  IcpOptimizer(Eigen::Matrix<double,Eigen::Dynamic,3> _firstCloud, Eigen::Matrix<double,Eigen::Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations);
+  IcpOptimizer(Eigen::Matrix<double,Eigen::Dynamic,3> _firstCloud, Eigen::Matrix<double,Eigen::Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, double _mu, int _nbIterShrink, double _p);
   
   //The algorithm itself
   std::pair<RotMatrix,TransMatrix> performSparceICP();
@@ -31,6 +31,9 @@ public:
 
   //Normal estimation
   Eigen::Matrix<double,Eigen::Dynamic,3> estimateNormals(PointCloud pointCloud, const size_t k);
+
+  //Shrink operator
+  TransMatrix shrink(TransMatrix h);
 
   //Getters
   Eigen::Matrix<double,Eigen::Dynamic,3> getFirstNormals() const;
@@ -42,8 +45,11 @@ private:
   Eigen::Matrix<double,Eigen::Dynamic,3> firstNormals;
   Eigen::Matrix<double,Eigen::Dynamic,3> secondNormals;
 
-  size_t kNormals;  //k-nn parameter for normal computation
-  int nbIterations; //number of iterations for the algorithm
+  const size_t kNormals;  //k-nn parameter for normal computation
+  const int nbIterations; //number of iterations for the algorithm
+  const double mu;        //Parameter for ICP step 2.1
+  const int nbIterShrink; //Number of iterations for the shrink part (2.1)
+  const double p;         //We use the norm L_p
 };
 
 #endif

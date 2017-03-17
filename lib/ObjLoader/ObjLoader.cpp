@@ -29,7 +29,7 @@ Matrix<double,Dynamic,3> ObjectLoader::operator()(string filePath)
   int iterator = 0;
   for (std::string line; std::getline(filein, line); ) 
   { 
-    if(line[0] != 'v')
+    if(line[0] != 'v' || line[1] != ' ')
       continue;
     istringstream iss(line);
     vector<string> itemsInString{istream_iterator<string>{iss},

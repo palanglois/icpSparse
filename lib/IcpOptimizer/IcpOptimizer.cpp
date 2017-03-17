@@ -4,8 +4,8 @@ using namespace std;
 using namespace Eigen;
 using namespace nanoflann;
 
-IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, double _mu, int _nbIterShrink, double _p) : 
-firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations), mu(_mu), nbIterShrink(_nbIterShrink), p(_p)
+IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p) : 
+firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations), nbIterationsIn(_nbIterationsIn), mu(_mu), nbIterShrink(_nbIterShrink), p(_p)
 {
   //Normal estimation
   cout << "Estimating normals for first cloud" << endl;
@@ -13,12 +13,16 @@ firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbItera
   cout << "Estimating normals for second cloud" << endl;
   secondNormals = estimateNormals(_secondCloud,kNormals);
   cout << "Done with normal estimation" << endl;
+
+  //Initializing the Lagrange multipliers to 0 for step 2.1
+  lambda.resize(firstCloud.rows(),3);
+  lambda.setZero();
 }
 
 /*
 This function is the main implementation of the algorithm where every step are made explicit.
 */
-pair<RotMatrix,TransMatrix> IcpOptimizer::performSparceICP()
+RigidTransfo IcpOptimizer::performSparceICP()
 {
   //Initialize the rigid transformation
 
@@ -36,26 +40,47 @@ pair<RotMatrix,TransMatrix> IcpOptimizer::performSparceICP()
   //Beginning of the algorithm itself
   for(int iter = 0; iter<nbIterations ; iter++)
   {
+    cout << "Iteration " << iter << endl;
     //1st step : Computing correspondances
-    vector<int> matchIndice = computeCorrespondances(secondCloud,movingPC);
+    PointCloud matchPC = computeCorrespondances(secondCloud,movingPC); //y in the paper
 
     //2nd step : Computing transformation
+    RigidTransfo iterTransfo;
+    for(int iterTwo = 0; iterTwo<nbIterationsIn;iterTwo++)
+    {
+      // step 2.1 Computing z
+    
+      //Compute h
+      Matrix<double,Dynamic,3> h = movingPC-matchPC+lambda/mu;
+      //Optimizing z with the shrink operator
+      Matrix<double,Dynamic,3> z;
+      z.resize(h.rows(),3);
+      for(int i=0;i<h.rows();i++)
+        z.row(i) = shrink(h.row(i).transpose());
 
-    // step 2.1 (see paper notation)
+      // step 2.2 point-to-point ICP
 
-    // step 2.2 (see paper notation)
+      //Compute C
+      PointCloud c = matchPC + z - lambda/mu;
+      //Make a point-to-point ICP iteration
+      iterTransfo = rigidTransformEstimation(movingPC,c);
 
-    // step 2.3 (see paper notation)
+      // step 2.3 Updating the Lagrange multipliers
+      PointCloud delta = movePointCloud(movingPC,iterTransfo)-matchPC - z;
+      lambda = lambda + mu * delta;
+    }
 
     //3rd step : Updating the moving pointCloud
+    movingPC = movePointCloud(movingPC,iterTransfo);
   }
 
   return pair<RotMatrix,TransMatrix>(initialRotation,initialTranslation);
 }
 
-/* This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the indices of the closest opint in refCloud for each point in queryCloud.
+/* 
+This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the point cloud of the closest points of queryCloud.
 */
-vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud, bool verbose)
+PointCloud IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud, bool verbose)
 {
   //Create an adapted kd tree for the point cloud
   typedef KDTreeEigenMatrixAdaptor< Matrix<double,Dynamic,3> > my_kd_tree_t;
@@ -64,7 +89,8 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
   my_kd_tree_t   mat_index(3, refCloud, 10 /* max leaf */ );
   mat_index.index->buildIndex();
 
-  vector<int> foundIndex;
+  PointCloud nearestPoints;
+  nearestPoints.resize(queryCloud.rows(),3);
   for(int i=0;i<queryCloud.rows();i++)
   {
     //Current query point
@@ -79,7 +105,11 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
     resultSet.init(&ret_indexes[0], &out_dists_sqr[0] );
 
     mat_index.index->findNeighbors(resultSet, &queryPoint[0], SearchParams(10));
-    foundIndex.push_back(ret_indexes[0]);
+
+    //Updating the resulting point cloud
+    nearestPoints(i,0) = refCloud(ret_indexes[0],0);
+    nearestPoints(i,1) = refCloud(ret_indexes[0],1);
+    nearestPoints(i,2) = refCloud(ret_indexes[0],2);
 
     if(verbose)
     {
@@ -87,10 +117,21 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
       cout << refCloud(ret_indexes[0],0) << " " << refCloud(ret_indexes[0],1) << " " << refCloud(ret_indexes[0],2) << " closestPoint" << endl << endl << endl;
     }
   }
-  return foundIndex;
+  return nearestPoints;
 }
 
-/* This function estimates the normals for the point cloud pointCloud. It makes use of the k nearest neighbour algorithm implemented in FLANN
+/*
+Move the pointCloud according to the rigid transformation in transfo 
+*/
+PointCloud IcpOptimizer::movePointCloud(PointCloud pointCloud, RigidTransfo transfo)
+{
+  RotMatrix rot = transfo.first;
+  TransMatrix t = transfo.second;
+  return (rot*pointCloud.transpose()+t.replicate(1,pointCloud.rows())).transpose();
+}
+
+/* 
+This function estimates the normals for the point cloud pointCloud. It makes use of the k nearest neighbour algorithm implemented in FLANN
 */
 Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> pointCloud, const size_t k)
 {
@@ -168,6 +209,32 @@ Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> 
   return normals;
 }
 
+/*
+This function is the standard point to plane ICP
+a : moving cloud
+b : reference cloud
+*/
+RigidTransfo IcpOptimizer::rigidTransformEstimation(PointCloud a, PointCloud b)
+{
+  //Initialize the rigid transformation
+
+  RotMatrix initialRotation;
+  initialRotation.setZero();
+  for(int i=0;i<3;i++)
+    initialRotation(i,i) = 1.;
+
+  TransMatrix initialTranslation;
+  initialTranslation.setZero();
+
+  //TODO
+
+  return RigidTransfo(initialRotation,initialTranslation);
+}
+
+/*
+This function implements the shrink operator which optimizes the function
+f(z) = ||z||_2^p + mu/2*||z-h||_2^2
+*/
 TransMatrix IcpOptimizer::shrink(TransMatrix h)
 {
   double alpha_a = pow((2./mu)*(1.-p),1./(2.-p));
@@ -181,7 +248,8 @@ TransMatrix IcpOptimizer::shrink(TransMatrix h)
   return beta*h;
 }
 
-/* Just a getter to the normals of the first cloud (reference cloud)
+/* 
+Just a getter to the normals of the first cloud (moving cloud)
 */
 Matrix<double,Dynamic,3> IcpOptimizer::getFirstNormals() const
 {

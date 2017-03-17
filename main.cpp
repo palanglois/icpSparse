@@ -17,10 +17,14 @@ int main()
   const double p = 0.5;         //We use the norm L_p
   const bool verbose = false;   //Verbosity trigger
 
+  //Finding the media directory
+  string mediaDir = string(ICPSPARSE_MEDIA_DIR);
+  mediaDir = mediaDir.substr(1,mediaDir.length()-2);
+
   //Loading the point clouds
   ObjectLoader myLoader;
-  Matrix<double,Dynamic,3> pointCloudOne = myLoader("/home/thefroggy/Documents/MVA/NuageDePointModelisation/projet/testPC/bunny_side1.obj");
-  Matrix<double,Dynamic,3> pointCloudTwo = myLoader("/home/thefroggy/Documents/MVA/NuageDePointModelisation/projet/testPC/bunny_side3.obj");
+  Matrix<double,Dynamic,3> pointCloudOne = myLoader(mediaDir+"bunny_side1.obj");
+  Matrix<double,Dynamic,3> pointCloudTwo = myLoader(mediaDir+"bunny_side2.obj");
 
   //Creatin an IcpOptimizer in order to perform the sparse icp
   IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals,nbIterations,nbIterationsIn,mu,nbIterShrink,p,verbose);
@@ -30,7 +34,7 @@ int main()
   PointCloud resultingCloud = myIcpOptimizer.getMovedPointCloud();
 
   //Save the resulting point cloud
-  myLoader.dumpToFile(resultingCloud,myIcpOptimizer.getMovedNormals(),"/home/thefroggy/Documents/MVA/NuageDePointModelisation/projet/testPC/bunny_ICP_test.ply");
+  myLoader.dumpToFile(resultingCloud,myIcpOptimizer.getMovedNormals(),mediaDir+"bunny_ICP_test.ply");
 
   //Show resulting transformation
   RigidTransfo resultingTransfo = myIcpOptimizer.getComputedTransfo();

@@ -16,7 +16,7 @@ int main()
   const int nbIterShrink = 3;   //Number of iterations for shrink step (2.1 also)
   const double p = 0.5;         //We use the norm L_p
   const bool verbose = false;   //Verbosity trigger
-  const IcpMethod method = pointToPoint;
+  const IcpMethod method = pointToPoint; //Underlying ICP method
 
   //Finding the media directory
   string mediaDir = string(ICPSPARSE_MEDIA_DIR);

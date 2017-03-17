@@ -9,7 +9,6 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
 #include "nanoflann.hpp"
-#include "ObjLoader.h"
 
 /* Each point in a point cloud is loaded as a line vector, 
 but every computation is made with the mathematical convention ! (column vectors)

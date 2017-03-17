@@ -16,6 +16,7 @@ int main()
   const int nbIterShrink = 3;   //Number of iterations for shrink step (2.1 also)
   const double p = 0.5;         //We use the norm L_p
   const bool verbose = false;   //Verbosity trigger
+  const IcpMethod method = pointToPoint;
 
   //Finding the media directory
   string mediaDir = string(ICPSPARSE_MEDIA_DIR);
@@ -27,7 +28,7 @@ int main()
   Matrix<double,Dynamic,3> pointCloudTwo = myLoader(mediaDir+"bunny_side2.obj");
 
   //Creatin an IcpOptimizer in order to perform the sparse icp
-  IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals,nbIterations,nbIterationsIn,mu,nbIterShrink,p,verbose);
+  IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals,nbIterations,nbIterationsIn,mu,nbIterShrink,p,method,verbose);
 
   //Perform ICP
   myIcpOptimizer.performSparceICP();

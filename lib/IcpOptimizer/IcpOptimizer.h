@@ -19,11 +19,14 @@ typedef Eigen::Matrix<double,3,1> TransMatrix;             //A type for the tran
 typedef std::pair<RotMatrix,TransMatrix> RigidTransfo;     //A type for the rigid transform
 typedef Eigen::Matrix<double,Eigen::Dynamic,3> PointCloud; //A type for the point clouds
 
+//Enumerator for setting the underlying ICP method used
+enum IcpMethod {pointToPoint,pointToPlane};
+
 class IcpOptimizer
 {
 public:
   //Constructor
-  IcpOptimizer(Eigen::Matrix<double,Eigen::Dynamic,3> _firstCloud, Eigen::Matrix<double,Eigen::Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, bool _verbose);
+  IcpOptimizer(Eigen::Matrix<double,Eigen::Dynamic,3> _firstCloud, Eigen::Matrix<double,Eigen::Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, IcpMethod _method, bool _verbose);
   
   //The algorithm itself
   int performSparceICP();
@@ -73,6 +76,7 @@ private:
   const int nbIterShrink;   //Number of iterations for the shrink part (2.1)
   const double p;           //We use the norm L_p
   const bool verbose;       //Verbosity trigger
+  const IcpMethod method;   //The used method (point to point or point to plane)
 };
 
 #endif

@@ -8,15 +8,18 @@ using namespace nanoflann;
 /*
 Main constructor. Initializes the point clouds and the sparse ICP parameters.
 */
-IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, bool _verbose) : 
-firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations), nbIterationsIn(_nbIterationsIn), mu(_mu), nbIterShrink(_nbIterShrink), p(_p), verbose(_verbose)
+IcpOptimizer::IcpOptimizer(Matrix<double,Dynamic,3> _firstCloud, Matrix<double,Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, IcpMethod _method, bool _verbose) : 
+firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbIterations(_nbIterations), nbIterationsIn(_nbIterationsIn), mu(_mu), nbIterShrink(_nbIterShrink), p(_p), method(_method), verbose(_verbose)
 {
   //Normal estimation
   cout << "Estimating normals for first cloud" << endl;
   firstNormals = estimateNormals(_firstCloud,kNormals);
   cout << "Estimating normals for second cloud" << endl;
-  secondNormals = estimateNormals(_secondCloud,kNormals);
-  cout << "Done with normal estimation" << endl;
+  if(method == pointToPlane)
+  {
+    secondNormals = estimateNormals(_secondCloud,kNormals);
+    cout << "Done with normal estimation" << endl;
+  }
 
   //Initialize the computed transformation
   computedTransfo = RigidTransfo(RotMatrix::Identity(),TransMatrix::Zero(3,1));
@@ -63,7 +66,8 @@ int IcpOptimizer::performSparceICP()
       //Compute C
       PointCloud c = matchPC + z - lambda/mu;
       //Make a point-to-point ICP iteration
-      iterTransfo = rigidTransformEstimation(movingPC,c);
+      if(method == pointToPoint)
+        iterTransfo = rigidTransformEstimation(movingPC,c);
 
       //Updating the moving pointCloud
       movingPC = movePointCloud(movingPC,iterTransfo);

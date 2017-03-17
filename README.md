@@ -4,6 +4,10 @@ This repository contains an implementation of the [Sparse Iterative Closest Poin
 
 ## Dependencies ##
 
+The dependencies are header-only and are all included in the ext directory. As a consequence, there is nothing to do.
+For the record, here is the list of dependencies :
+
+* [nanoflann](https://github.com/jlblancoc/nanoflann)
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main\_Page)
 
 ## Reference ##

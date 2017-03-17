@@ -216,19 +216,25 @@ b : reference cloud
 */
 RigidTransfo IcpOptimizer::rigidTransformEstimation(PointCloud a, PointCloud b)
 {
-  //Initialize the rigid transformation
+  //Centering the point clouds
+  Matrix<double,1,3> centerA = a.colwise().sum()/a.rows();
+  Matrix<double,1,3> centerB = b.colwise().sum()/b.rows();
+  PointCloud aCenter = a - centerA.replicate(a.rows(),1);
+  PointCloud bCenter = b - centerB.replicate(b.rows(),1);
 
-  RotMatrix initialRotation;
-  initialRotation.setZero();
-  for(int i=0;i<3;i++)
-    initialRotation(i,i) = 1.;
+  //Computing the cross product matrix W
+  Matrix<double,3,3> W;
+  W.setZero();
+  for(int i=0;i<a.rows();i++)
+    W = W + a.row(i).transpose()*b.row(i);
 
-  TransMatrix initialTranslation;
-  initialTranslation.setZero();
+  //Computing singular value decomposition
+  JacobiSVD<Matrix<double,3,3>> svd(W, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
-  //TODO
-
-  return RigidTransfo(initialRotation,initialTranslation);
+  //Computing the rigid transformation
+  RotMatrix rotation = svd.matrixV()*svd.matrixU().transpose();
+  TransMatrix translation = (centerB.transpose()-rotation*centerA.transpose()).transpose();
+  return RigidTransfo(rotation,translation);
 }
 
 /*

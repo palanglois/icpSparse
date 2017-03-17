@@ -7,6 +7,7 @@
 #include <float.h>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 #include "nanoflann.hpp"
 
 /* Each point in a point cloud is loaded as a line vector, 

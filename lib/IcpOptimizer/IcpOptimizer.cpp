@@ -14,9 +14,9 @@ firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbItera
   //Normal estimation
   cout << "Estimating normals for first cloud" << endl;
   firstNormals = estimateNormals(_firstCloud,kNormals);
-  cout << "Estimating normals for second cloud" << endl;
   if(method == pointToPlane)
   {
+    cout << "Estimating normals for second cloud" << endl;
     secondNormals = estimateNormals(_secondCloud,kNormals);
     cout << "Done with normal estimation" << endl;
   }
@@ -65,9 +65,13 @@ int IcpOptimizer::performSparceICP()
 
       //Compute C
       PointCloud c = matchPC + z - lambda/mu;
-      //Make a point-to-point ICP iteration
+      //Make a standard ICP iteration
       if(method == pointToPoint)
-        iterTransfo = rigidTransformEstimation(movingPC,c);
+        iterTransfo = rigidTransformPointToPoint(movingPC,c);
+      else if(method == pointToPlane)
+        iterTransfo = rigidTransformPointToPlane(movingPC,c,secondNormals);
+      else
+        cout << "Warning ! The method you try to use is incorrect !" << endl;
 
       //Updating the moving pointCloud
       movingPC = movePointCloud(movingPC,iterTransfo);
@@ -206,7 +210,7 @@ This function is the standard point to plane ICP
 a : moving cloud
 b : reference cloud
 */
-RigidTransfo IcpOptimizer::rigidTransformEstimation(PointCloud a, PointCloud b) const
+RigidTransfo IcpOptimizer::rigidTransformPointToPoint(PointCloud a, PointCloud b) const
 {
   //Centering the point clouds
   Matrix<double,1,3> centerA = a.colwise().sum()/a.rows();
@@ -235,6 +239,14 @@ RigidTransfo IcpOptimizer::rigidTransformEstimation(PointCloud a, PointCloud b) 
   }
 
   return RigidTransfo(rotation,translation);
+}
+
+RigidTransfo IcpOptimizer::rigidTransformPointToPlane(PointCloud a, PointCloud b, Matrix<double,Dynamic,3> n) const
+{
+
+  //TODO
+
+  return RigidTransfo(RotMatrix::Identity(),TransMatrix::Zero(3,1));
 }
 
 /*

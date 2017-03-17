@@ -26,7 +26,7 @@ class IcpOptimizer
 {
 public:
   //Constructor
-  IcpOptimizer(Eigen::Matrix<double,Eigen::Dynamic,3> _firstCloud, Eigen::Matrix<double,Eigen::Dynamic,3> _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, IcpMethod _method, bool _verbose);
+  IcpOptimizer(PointCloud _firstCloud, PointCloud _secondCloud, size_t _kNormals, int _nbIterations, int _nbIterationsIn, double _mu, int _nbIterShrink, double _p, IcpMethod _method, bool _verbose);
   
   //The algorithm itself
   int performSparceICP();
@@ -41,7 +41,10 @@ public:
   Eigen::Matrix<double,Eigen::Dynamic,3> estimateNormals(PointCloud pointCloud, const size_t k);
 
   //Classical rigid transform estimation (point-to-point)
-  RigidTransfo rigidTransformEstimation(PointCloud a, PointCloud b) const;
+  RigidTransfo rigidTransformPointToPoint(PointCloud a, PointCloud b) const;
+
+  //Classical rigid transform estimation (point-to-plane)
+  RigidTransfo rigidTransformPointToPlane(PointCloud a, PointCloud b, Eigen::Matrix<double,Eigen::Dynamic,3> n) const;
 
   //Shrink operator
   TransMatrix shrink(TransMatrix h) const;

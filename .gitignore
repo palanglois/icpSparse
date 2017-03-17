@@ -4,3 +4,4 @@ update_compile_commands.py
 *.swp
 *.kdev4
 kdev4
+media/bunny_ICP_test.ply

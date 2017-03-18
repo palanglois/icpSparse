@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
+#include <Eigen/Geometry>
 #include "nanoflann.hpp"
 
 /* Each point in a point cloud is loaded as a line vector, 
@@ -32,7 +33,6 @@ public:
   int performSparceICP();
 
   //First step : compute correspondances
-  //PointCloud computeCorrespondances(PointCloud refCloud, PointCloud queryCloud);
   std::vector<int> computeCorrespondances(PointCloud refCloud, PointCloud queryCloud);
 
   //Apply rigid transformation to a point cloud

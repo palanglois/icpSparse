@@ -281,15 +281,8 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPlane(PointCloud a, PointCloud b
   Matrix<double,6,1> solution = ldlt.solve(rightMember);
 
   //Expressing the resulting transformation
-  RotMatrix rotation = RotMatrix::Identity();
-  rotation(2,1) = solution(0,0); rotation(1,2) = -solution(0,0); //alpha
-  rotation(0,2) = solution(1,0); rotation(2,0) = -solution(1,0); //beta
-  rotation(1,0) = solution(2,0); rotation(0,1) = -solution(2,0); //gamma
-
-  TransMatrix translation = TransMatrix::Zero(3,1);
-  translation(0,0) = solution(3,0); //t1
-  translation(1,0) = solution(4,0); //t2
-  translation(2,0) = solution(5,0); //t3
+  RotMatrix rotation = (AngleAxisd(AngleAxisd::Scalar(solution(0,0)), Vector3d::UnitX()) * AngleAxisd(AngleAxisd::Scalar(solution(1,0)), Vector3d::UnitY()) * AngleAxisd(AngleAxisd::Scalar(solution(2,0)), Vector3d::UnitZ())).matrix();
+  TransMatrix translation = solution.block(3,0,3,1);
 
   return RigidTransfo(rotation,translation);
 }

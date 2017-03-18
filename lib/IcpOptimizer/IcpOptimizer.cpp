@@ -46,7 +46,10 @@ int IcpOptimizer::performSparceICP()
   {
     cout << "Iteration " << iter << endl;
     //1st step : Computing correspondances
-    PointCloud matchPC = computeCorrespondances(secondCloud,movingPC); //y in the paper
+    vector<int> matchIndice = computeCorrespondances(secondCloud,movingPC);
+    PointCloud matchPC = selectSubsetPC(secondCloud,matchIndice); //Selecting y
+    if(method == pointToPlane)
+      selectedNormals = selectSubsetPC(secondNormals,matchIndice);
 
     //2nd step : Computing transformation
     RigidTransfo iterTransfo;
@@ -69,7 +72,7 @@ int IcpOptimizer::performSparceICP()
       if(method == pointToPoint)
         iterTransfo = rigidTransformPointToPoint(movingPC,c);
       else if(method == pointToPlane)
-        iterTransfo = rigidTransformPointToPlane(movingPC,c,secondNormals);
+        iterTransfo = rigidTransformPointToPlane(movingPC,c,selectedNormals);
       else
         cout << "Warning ! The method you try to use is incorrect !" << endl;
 
@@ -91,7 +94,7 @@ int IcpOptimizer::performSparceICP()
 /* 
 This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the point cloud of the closest points of queryCloud.
 */
-PointCloud IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud)
+vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud)
 {
   //Create an adapted kd tree for the point cloud
   typedef KDTreeEigenMatrixAdaptor< Matrix<double,Dynamic,3> > my_kd_tree_t;
@@ -100,7 +103,8 @@ PointCloud IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClou
   my_kd_tree_t   mat_index(3, refCloud, 10 /* max leaf */ );
   mat_index.index->buildIndex();
 
-  PointCloud nearestPoints = PointCloud::Zero(queryCloud.rows(),3);
+  //PointCloud nearestPoints = PointCloud::Zero(queryCloud.rows(),3);
+  vector<int> nearestIndices;
   for(int i=0;i<queryCloud.rows();i++)
   {
     //Current query point
@@ -116,8 +120,8 @@ PointCloud IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClou
 
     mat_index.index->findNeighbors(resultSet, &queryPoint[0], SearchParams(10));
 
-    //Updating the resulting point cloud
-    nearestPoints.row(i) = refCloud.row(ret_indexes[0]);
+    //Updating the resulting index vector
+    nearestIndices.push_back(ret_indexes[0]);
 
     if(verbose)
     {
@@ -125,7 +129,7 @@ PointCloud IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClou
       cout << refCloud(ret_indexes[0],0) << " " << refCloud(ret_indexes[0],1) << " " << refCloud(ret_indexes[0],2) << " closestPoint" << endl << endl << endl;
     }
   }
-  return nearestPoints;
+  return nearestIndices;
 }
 
 /*
@@ -206,7 +210,7 @@ Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> 
 }
 
 /*
-This function is the standard point to plane ICP
+This function is the standard point to point ICP
 a : moving cloud
 b : reference cloud
 */
@@ -218,7 +222,7 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPoint(PointCloud a, PointCloud b
   PointCloud aCenter = a - centerA.replicate(a.rows(),1);
   PointCloud bCenter = b - centerB.replicate(b.rows(),1);
 
-  //Computing the cross product matrix W
+  //Computing the product matrix W
   Matrix<double,3,3> W;
   W.setZero();
   for(int i=0;i<a.rows();i++)
@@ -241,11 +245,37 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPoint(PointCloud a, PointCloud b
   return RigidTransfo(rotation,translation);
 }
 
+/*
+This function is the standard point to plane ICP
+a : moving cloud
+b : reference cloud
+*/
 RigidTransfo IcpOptimizer::rigidTransformPointToPlane(PointCloud a, PointCloud b, Matrix<double,Dynamic,3> n) const
 {
+  //Initialize linear system
+  Matrix<double,6,6> leftMember = Matrix<double,6,6>::Zero(6,6);
+  Matrix<double,6,1> rightMember = Matrix<double,6,1>::Zero(6,1);
 
+  //PointCloud c = PointCloud::Zero(a.rows(),3);
+  for(int i=0;i<a.rows();i++)
+  {
+    //Computing c = a x n
+    Matrix<double,1,3> c = a.row(i).cross(n.row(i));
+
+    //Updating left member
+    leftMember.block(0,0,3,3) += c.transpose()*c;                         //Top-left block
+    leftMember.block(3,3,3,3) += n.row(i).transpose()*n.row(i);           //Bottom-right block
+    leftMember.block(0,3,3,3) += 
+      n.row(i).replicate(3,1).cwiseProduct(c.transpose().replicate(1,3)); //Top-right block
+    leftMember.block(3,0,3,3) +=
+      n.row(i).transpose().replicate(1,3).cwiseProduct(c.replicate(3,1)); //Bottom-left block
+
+    //Updating right member
+    double factor = (a.row(i)-b.row(i))*n.row(i).transpose();
+    rightMember.block(0,0,3,1) = factor*c.transpose();
+    rightMember.block(3,0,3,1) = factor*n.row(i).transpose();
+  }
   //TODO
-
   return RigidTransfo(RotMatrix::Identity(),TransMatrix::Zero(3,1));
 }
 
@@ -272,6 +302,17 @@ Computing composition of tNew by tOld (tNew o tOld)
 RigidTransfo IcpOptimizer::compose(RigidTransfo tNew, RigidTransfo tOld) const
 {
   return RigidTransfo(tNew.first*tOld.first,tNew.first*tOld.second+tNew.second);
+}
+
+/*
+Selects the subset of rows whose index is in indice in the Point Cloud p
+*/
+PointCloud IcpOptimizer::selectSubsetPC(PointCloud p, vector<int> indice) const
+{
+  PointCloud selection = PointCloud::Zero(indice.size(),3);
+  for(int i=0;i<indice.size();i++)
+    selection.row(i) = p.row(indice[i]);
+  return selection;
 }
 
 /* 

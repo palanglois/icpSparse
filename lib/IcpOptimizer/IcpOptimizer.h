@@ -32,7 +32,8 @@ public:
   int performSparceICP();
 
   //First step : compute correspondances
-  PointCloud computeCorrespondances(PointCloud refCloud, PointCloud queryCloud);
+  //PointCloud computeCorrespondances(PointCloud refCloud, PointCloud queryCloud);
+  std::vector<int> computeCorrespondances(PointCloud refCloud, PointCloud queryCloud);
 
   //Apply rigid transformation to a point cloud
   PointCloud movePointCloud(PointCloud poinCloud, RigidTransfo t);
@@ -52,6 +53,9 @@ public:
   //Computing composition of tNew by tOld (tNew o tOld)
   RigidTransfo compose(RigidTransfo tNew, RigidTransfo tOld) const;
 
+  //Selection of a subset in a PointCloud
+  PointCloud selectSubsetPC(PointCloud p, std::vector<int> indice) const;
+
   //Getters
   Eigen::Matrix<double,Eigen::Dynamic,3> getFirstNormals() const;
   Eigen::Matrix<double,Eigen::Dynamic,3> getMovedNormals() const;
@@ -62,6 +66,7 @@ private:
   const PointCloud secondCloud;
   PointCloud movingPC;
   Eigen::Matrix<double,Eigen::Dynamic,3> movingNormals;
+  Eigen::Matrix<double,Eigen::Dynamic,3> selectedNormals; //For point-to-plane
   RigidTransfo computedTransfo;
   bool hasBeenComputed;
   /*I don't use the PointCloud name for the normals in order to distinguish them 

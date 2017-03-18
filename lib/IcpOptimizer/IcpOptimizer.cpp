@@ -92,7 +92,7 @@ int IcpOptimizer::performSparceICP()
 }
 
 /* 
-This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It retunes the point cloud of the closest points of queryCloud.
+This function computes each closest point in refCloud for each point in queryCloud using the nanoflann kd-tree implementation. It returns the indice of the closest points of queryCloud.
 */
 vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refCloud, Matrix<double,Dynamic,3> queryCloud)
 {
@@ -158,7 +158,6 @@ Matrix<double,Dynamic,3> IcpOptimizer::estimateNormals(Matrix<double,Dynamic,3> 
   {
     //Current point for which the normal is being computed
     Matrix<double,1,3> currentPoint = pointCloud.block(i,0,1,3);
-    //cout << "Current point : " << currentPoint << endl;
     
     //Do a knn search
     vector<size_t> ret_indexes(k);
@@ -249,6 +248,7 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPoint(PointCloud a, PointCloud b
 This function is the standard point to plane ICP
 a : moving cloud
 b : reference cloud
+n : normal to the reference cloud b
 */
 RigidTransfo IcpOptimizer::rigidTransformPointToPlane(PointCloud a, PointCloud b, Matrix<double,Dynamic,3> n) const
 {
@@ -273,7 +273,7 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPlane(PointCloud a, PointCloud b
     //Updating right member
     double factor = (a.row(i)-b.row(i))*n.row(i).transpose();
     rightMember.block(0,0,3,1) -= factor*c.transpose();        //Top 3 elements
-    rightMember.block(3,0,3,1) -= factor*n.row(i).transpose(); //Bottom 3 element
+    rightMember.block(3,0,3,1) -= factor*n.row(i).transpose(); //Bottom 3 elements
   }
   
   //Solving linear system

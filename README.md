@@ -1,4 +1,4 @@
-## Sparse Iterative Closest Point Algorithm ##
+# Sparse Iterative Closest Point Algorithm #
 
 This repository contains an implementation of the [Sparse Iterative Closest Point](http://dl.acm.org/citation.cfm?id=2600305). It was implemented for the course [Nuage de Point et Modélisation](https://perso.telecom-paristech.fr/~boubek/ens/master/mva/npm/index.html) at Master [MVA](http://www.math.ens-cachan.fr/version-francaise/formations/master-mva/).
 

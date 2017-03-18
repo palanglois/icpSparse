@@ -37,6 +37,10 @@ This function is the main implementation of the algorithm where every step are m
 */
 int IcpOptimizer::performSparceICP()
 {
+  if(method == pointToPoint)
+    cout << "Beginning ICP with method Point to Point" << endl;
+  else if (method == pointToPlane)
+    cout << "Beginning ICP with method Point to Plane" << endl;
   //Initialize the point cloud that is going to move
   movingPC = firstCloud;
   movingNormals = firstNormals;

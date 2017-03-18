@@ -86,6 +86,7 @@ int IcpOptimizer::performSparceICP()
       movingPC = movePointCloud(movingPC,iterTransfo);
       movingNormals = (iterTransfo.first*movingNormals.transpose()).transpose();
       computedTransfo = compose(iterTransfo,computedTransfo);
+      updateIter(iterTransfo); //Updating the iterations measure
 
       // step 2.3 Updating the Lagrange multipliers
       PointCloud delta = movingPC-matchPC - z;
@@ -109,7 +110,6 @@ vector<int> IcpOptimizer::computeCorrespondances(Matrix<double,Dynamic,3> refClo
   my_kd_tree_t   mat_index(3, refCloud, 10 /* max leaf */ );
   mat_index.index->buildIndex();
 
-  //PointCloud nearestPoints = PointCloud::Zero(queryCloud.rows(),3);
   vector<int> nearestIndices;
   for(int i=0;i<queryCloud.rows();i++)
   {
@@ -228,8 +228,7 @@ RigidTransfo IcpOptimizer::rigidTransformPointToPoint(PointCloud a, PointCloud b
   PointCloud bCenter = b - centerB.replicate(b.rows(),1);
 
   //Computing the product matrix W
-  Matrix<double,3,3> W;
-  W.setZero();
+  Matrix<double,3,3> W = Matrix<double,3,3>::Zero(3,3);
   for(int i=0;i<a.rows();i++)
     W = W + a.row(i).transpose()*b.row(i);
 
@@ -327,6 +326,30 @@ PointCloud IcpOptimizer::selectSubsetPC(PointCloud p, vector<int> indice) const
   for(int i=0;i<indice.size();i++)
     selection.row(i) = p.row(indice[i]);
   return selection;
+}
+
+/*
+Updates the iterations measure by estimating the amplitude of rigid motion t
+*/
+void IcpOptimizer::updateIter(RigidTransfo t)
+{
+  Matrix<double,4,4> id = Matrix<double,4,4>::Identity();
+  Matrix<double,4,4> curT = Matrix<double,4,4>::Identity();
+  curT.block(0,0,3,3) = t.first;
+  curT.block(0,3,3,1) = t.second;
+  Matrix<double,4,4> diff = curT - id; //Difference between t and identity
+  iterations.push_back((diff*diff.transpose()).trace()); //Returning matrix norm
+}
+
+/*
+Save iterations to file
+*/
+void IcpOptimizer::saveIter(string pathToFile)
+{
+  ofstream txtStream(pathToFile.c_str());
+  for(int i=0;i<iterations.size();i++)
+    txtStream << iterations[i] << endl;
+  txtStream.close();
 }
 
 /* 

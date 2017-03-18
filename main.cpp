@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
   opt.add_option("-o","--output","Path to the output directory (REQUIRED)","");
   opt.add_option("-n","--name","Name of the output file","output");
   opt.add_option("-k", "--k_normals", "knn parameter for normals computation", "10" );
-  opt.add_option("-n1", "--n_iterations_1","Nb of iterations for the algorithm","50");
+  opt.add_option("-n1", "--n_iterations_1","Nb of iterations for the algorithm","25");
   opt.add_option("-n2", "--n_iterations_2","Nb of iterations for the algorithm's step 2","2");
   opt.add_option("-mu","--mu","Parameter for step 2.1","10");
   opt.add_option("-ns","--n_iterations_shrink","Number of iterations for shrink step (2.1)","3");
@@ -87,7 +87,8 @@ int main(int argc, char* argv[])
 
   if(output_path[output_path.size()-1] != '/')
     output_path.append("/");
-  output_path.append(opt["-n"] + ".ply"); 
+  string output_pc_path = output_path + opt["-n"] + ".ply";
+  string output_iter_path = output_path + opt["-n"] + ".txt"; 
 
   if(isPointToPlane && isPointToPoint)
   {
@@ -126,8 +127,9 @@ int main(int argc, char* argv[])
   }
   PointCloud resultingCloud = myIcpOptimizer.getMovedPointCloud();
 
-  //Save the resulting point cloud
-  myLoader.dumpToFile(resultingCloud,myIcpOptimizer.getMovedNormals(),output_path);
+  //Save the resulting point cloud and iterations report
+  myLoader.dumpToFile(resultingCloud,myIcpOptimizer.getMovedNormals(),output_pc_path);
+  myIcpOptimizer.saveIter(output_iter_path);
 
   //Show resulting transformation
   RigidTransfo resultingTransfo = myIcpOptimizer.getComputedTransfo();

@@ -5,3 +5,7 @@ update_compile_commands.py
 *.kdev4
 kdev4
 media/bunny_ICP_test.ply
+media/bunny_ICP_test.txt
+media/bunny_noised_ICP.ply
+media/bunny_noised_ICP.txt
+*.m

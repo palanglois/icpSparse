@@ -2,6 +2,7 @@
 #define ICP_OPTIMIZER_H
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
 #include <float.h>
@@ -56,6 +57,12 @@ public:
   //Selection of a subset in a PointCloud
   PointCloud selectSubsetPC(PointCloud p, std::vector<int> indice) const;
 
+  //Updates the iterations measure by estimating the amplitude of rigid motion t
+  void updateIter(RigidTransfo t);
+
+  //Save iterations to file
+  void saveIter(std::string pathToFile);
+
   //Getters
   Eigen::Matrix<double,Eigen::Dynamic,3> getFirstNormals() const;
   Eigen::Matrix<double,Eigen::Dynamic,3> getMovedNormals() const;
@@ -68,6 +75,7 @@ private:
   Eigen::Matrix<double,Eigen::Dynamic,3> movingNormals;
   Eigen::Matrix<double,Eigen::Dynamic,3> selectedNormals; //For point-to-plane
   RigidTransfo computedTransfo;
+  std::vector<double> iterations;
   bool hasBeenComputed;
   /*I don't use the PointCloud name for the normals in order to distinguish them 
   from the vertice*/

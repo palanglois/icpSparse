@@ -118,7 +118,12 @@ int main(int argc, char* argv[])
   IcpOptimizer myIcpOptimizer(pointCloudOne,pointCloudTwo,kNormals,nbIterations,nbIterationsIn,mu,nbIterShrink,p,method,verbose);
 
   //Perform ICP
-  myIcpOptimizer.performSparceICP();
+  int hasIcpFailed = myIcpOptimizer.performSparceICP();
+  if(hasIcpFailed)
+  {
+    cerr << "Failed to load the point clouds. Check the paths." << endl;
+    return EXIT_FAILURE;
+  }
   PointCloud resultingCloud = myIcpOptimizer.getMovedPointCloud();
 
   //Save the resulting point cloud

@@ -37,6 +37,8 @@ This function is the main implementation of the algorithm where every step are m
 */
 int IcpOptimizer::performSparceICP()
 {
+  if(firstCloud.rows() == 0 || secondCloud.rows() == 0)
+    return 1;
   if(method == pointToPoint)
     cout << "Beginning ICP with method Point to Point" << endl;
   else if (method == pointToPlane)

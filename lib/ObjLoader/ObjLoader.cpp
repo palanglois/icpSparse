@@ -44,7 +44,7 @@ Matrix<double,Dynamic,3> ObjectLoader::operator()(string filePath)
     pointCloud(iterator,2) = stod(itemsInString[3]);
     iterator++;
   }
-  cout << "Point Cloud successfully loaded with " << pointCloud.rows() << " vertice." << endl;
+  cout << "Point Cloud loaded with " << pointCloud.rows() << " vertice." << endl;
   filein.close();
   return pointCloud;
 }

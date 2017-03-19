@@ -9,3 +9,6 @@ media/bunny_ICP_test.txt
 media/bunny_noised_ICP.ply
 media/bunny_noised_ICP.txt
 *.m
+experiments/*.txt
+experiments/*.ply
+

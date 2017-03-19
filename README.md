@@ -12,7 +12,7 @@ For the record, here is the list of dependencies :
 
 ## Usage ##
 
-When the program has been built thanks to CMake and Make, just run ./icpSparse -h in order to see the help.
+When the program has been built thanks to CMake and Make, just run `./icpSparse -h` in order to see the help.
 
 Other useful lines : 
 

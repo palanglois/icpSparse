@@ -21,6 +21,10 @@ Other useful lines :
 
 Notice that you should always specify if you want to use the point-to-plane variant (`-pl`) or the point-to-point variant (`-po`).
 
+## Experiments ##
+
+There is a python script in the [experiments directory](https://github.com/palanglois/icpSparse/tree/master/experiments) in order to reproduce the results presented in the report.
+
 ## Reference ##
 
 Bouaziz, Sofien, Andrea Tagliasacchi, et Mark Pauly. « Sparse Iterative Closest Point ». In Proceedings of the Eleventh Eurographics/ACMSIGGRAPH Symposium on Geometry Processing, 113–123. SGP ’13. Aire-la-Ville, Switzerland, Switzerland: Eurographics Association, 2013. doi:10.1111/cgf.12178.

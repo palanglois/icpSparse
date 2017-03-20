@@ -68,6 +68,7 @@ public:
   Eigen::Matrix<double,Eigen::Dynamic,3> getMovedNormals() const;
   PointCloud getMovedPointCloud() const;
   RigidTransfo getComputedTransfo() const;
+  double getReferenceDist() const;
 private:
   const PointCloud firstCloud;
   const PointCloud secondCloud;
@@ -76,6 +77,7 @@ private:
   Eigen::Matrix<double,Eigen::Dynamic,3> selectedNormals; //For point-to-plane
   RigidTransfo computedTransfo;
   std::vector<double> iterations;
+  double referenceDist;
   bool hasBeenComputed;
   /*I don't use the PointCloud name for the normals in order to distinguish them 
   from the vertice*/

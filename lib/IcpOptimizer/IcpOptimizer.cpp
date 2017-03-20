@@ -28,6 +28,12 @@ firstCloud(_firstCloud), secondCloud(_secondCloud), kNormals(_kNormals), nbItera
   lambda.resize(firstCloud.rows(),3);
   lambda.setZero();
 
+  //Initialize the reference distance (bounding box diagonal of cloud 1)
+  Matrix<double,1,3> minCloudOne = firstCloud.colwise().minCoeff();
+  Matrix<double,1,3> maxCloudOne = firstCloud.colwise().maxCoeff();
+  referenceDist = (maxCloudOne-minCloudOne).norm();
+  cout << "The reference distance is : " << referenceDist << endl;
+
   //Initialize the other parameter
   hasBeenComputed = false;
 }
@@ -336,7 +342,7 @@ void IcpOptimizer::updateIter(RigidTransfo t)
   Matrix<double,4,4> id = Matrix<double,4,4>::Identity();
   Matrix<double,4,4> curT = Matrix<double,4,4>::Identity();
   curT.block(0,0,3,3) = t.first;
-  curT.block(0,3,3,1) = t.second;
+  curT.block(0,3,3,1) = t.second / referenceDist;
   Matrix<double,4,4> diff = curT - id; //Difference between t and identity
   iterations.push_back((diff*diff.transpose()).trace()); //Returning matrix norm
 }
@@ -406,3 +412,11 @@ RigidTransfo IcpOptimizer::getComputedTransfo() const
   return computedTransfo; 
 }
 
+/*
+Returns the reference distance which is the length of the great diagonal of the first 
+point cloud's bounding box.
+*/
+double IcpOptimizer::getReferenceDist() const
+{
+  return referenceDist;
+}

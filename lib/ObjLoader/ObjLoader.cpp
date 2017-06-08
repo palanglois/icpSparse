@@ -49,7 +49,7 @@ Matrix<double,Dynamic,3> ObjectLoader::operator()(string filePath)
   return pointCloud;
 }
 
-/* This functions write a ply file at filePath that contains the vertice and normals as specified in the input variables
+/* This function writes a .ply file at filePath that contains the vertice and normals as specified in the input variables
 */
 void ObjectLoader::dumpToFile(Matrix<double,Dynamic,3> vertice, Matrix<double,Dynamic,3> normals, string filePath)
 {

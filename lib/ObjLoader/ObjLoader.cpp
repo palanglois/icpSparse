@@ -8,7 +8,7 @@ ObjectLoader::ObjectLoader()
   
 }
 
-/*This function loads the vertice contained in the 3d .onj file located in filePath
+/*This function loads the vertice contained in the 3d .obj file located in filePath
 */
 Matrix<double,Dynamic,3> ObjectLoader::operator()(string filePath)
 {

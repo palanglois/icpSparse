@@ -78,7 +78,7 @@ public:
     myIcpOptimizer2->performSparceICP();
     resultingCloud = myIcpOptimizer2->getMovedPointCloud();
     myLoader.dumpToFile(resultingCloud,myIcpOptimizer2->getMovedNormals(),mediaDir+"bunny_noised_ICP.ply");
-    myIcpOptimizer->saveIter(mediaDir+"bunny_noised_ICP.txt");
+    myIcpOptimizer2->saveIter(mediaDir+"bunny_noised_ICP.txt");
     cout << "Resulting point cloud is in media/bunny_noised_ICP.ply" << endl;
     delete myIcpOptimizer2;
 
